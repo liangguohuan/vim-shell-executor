@@ -13,48 +13,33 @@ Py sys.path.append(vim.eval('expand("<sfile>:h")'))
 " --------------------------------
 "  Function(s)
 " --------------------------------
-function! LeftPad(s,amt,...)
-    if a:0 > 0
-        let char = a:1
-    else
-        let char = ' '
-    endif
-    return repeat(char,a:amt - len(a:s)) . a:s
-endfunction
-
-function! DisplayTimeDifference(time1,time2)
-    let l:t1List = split( a:time1, ":" )
-    let l:t2List = split( a:time2, ":" )
-    let l:difference = abs((l:t1List[1] * 60 + l:t1List[2]) - (l:t2List[1] * 60 + l:t2List[2]))
-    let l:minutesDifference = LeftPad(float2nr(floor(difference/60)), 2, "0")
-    let l:secondsDifference = LeftPad(l:difference - (l:minutesDifference * 60), 2, "0")
-    set cmdheight=2
-    echo "Execution started at: " . a:time1 . " Successfully finished at: " . a:time2 . " Duration: 00:" . l:minutesDifference . ":" . l:secondsDifference
-    set cmdheight=1
-endfunction
-
 function! vim_shell_executor#ExecuteWithShellProgram(selection_or_buffer)
-let startExecutionTime = strftime("%T")
-echo "Execution started at: " . startExecutionTime
 Py << endPython
 from vim_shell_executor import *
 
 def create_new_buffer(contents):
+    vim.command('only')
     vim.command('normal! Hmx``')
-    delete_old_output_if_exists()
     if int(vim.eval('exists("g:executor_output_win_height")')):
-        vim.command('aboveleft {}split executor_output'.format(vim.eval("g:executor_output_win_height")))
+        vim.command('belowright {}split executor_output'.format(vim.eval("g:executor_output_win_height")))
     else:
-        vim.command('aboveleft split executor_output')
+        vim.command('belowright split executor_output')
     vim.command('normal! ggdG')
-    vim.command('setlocal filetype=text')
+    vim.command('setlocal filetype=nofile')
+    vim.command('setlocal nobuflisted')
+    vim.command('setlocal nolist')
+    vim.command('setlocal noswapfile')
     vim.command('setlocal buftype=nowrite')
+    vim.command('setlocal bufhidden=hide')
+    vim.command('setlocal noreadonly')
+    vim.command('setlocal nowrap')
+    vim.command('map <silent> q :q<CR>')
     try:
         vim.command('call append(0, {0})'.format(contents))
     except:
         for index, line in enumerate(contents):
             vim.current.buffer.append(line)
-    vim.command('execute \'wincmd j\'')
+    vim.command('execute \'wincmd k\'')
     vim.command('normal! `xzt``')
 
 def delete_old_output_if_exists():
@@ -88,8 +73,4 @@ def execute():
 execute()
 
 endPython
-
-let endExecutionTime = strftime("%T")
-call DisplayTimeDifference(startExecutionTime, endExecutionTime)
-
 endfunction
